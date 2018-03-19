@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.polarisalpha.ca</groupId>
+	<artifactId>stardog-spring</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>stardog-spring</name>
+	<description>Stardog Spring Boot project</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.0.0.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+		<stardog-spring.version>5.0.1</stardog-spring.version>
+		<stardog.version>5.2.2</stardog.version>
+	</properties>
+
+	<dependencies>
+		<!-- Spring dependencies -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.undertow</groupId>
+			<artifactId>undertow-servlet</artifactId>
+			<version>1.0.0.Beta7</version>
+			<scope>runtime</scope>
+		</dependency>
+
+
+		<!-- Stardog dependencies -->
+		<dependency>
+			<groupId>com.complexible.stardog</groupId>
+			<artifactId>client-embedded</artifactId>
+			<version>${stardog.version}</version>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>com.complexible.stardog</groupId>
+			<artifactId>client-http</artifactId>
+			<version>${stardog.version}</version>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>com.complexible.stardog</groupId>
+			<artifactId>server</artifactId>
+			<version>${stardog.version}</version>
+			<type>pom</type>
+			<exclusions>
+				<exclusion>
+					<groupId>com.complexible</groupId>
+					<artifactId>annex</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.complexible.stardog</groupId>
+			<artifactId>stardog-spring</artifactId>
+			<version>${stardog-spring.version}</version>
+			<type>jar</type>
+			<exclusions>
+				<exclusion>
+					<groupId>org.openrdf.sesame</groupId>
+					<artifactId>sesame</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.complexible.stardog</groupId>
+					<artifactId>client-http</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.complexible.stardog</groupId>
+					<artifactId>client-snarl</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>spring-releases</id>
+			<url>https://repo.spring.io/libs-release</url>
+		</repository>
+		<repository>
+			<id>stardog-public</id>
+			<url>http://maven.stardog.com</url>
+		</repository>
+	</repositories>
+
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+
+</project>
