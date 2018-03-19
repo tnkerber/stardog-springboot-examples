@@ -4,6 +4,9 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import com.complexible.stardog.Stardog;
 
+/**
+ * Start/Stop the embedded Stardog server on application startup/shutdown
+ */
 public class StardogServletContextListener implements ServletContextListener {
     private static Stardog stardog;
 

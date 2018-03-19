@@ -45,8 +45,7 @@ public class StardogController {
             stardogService.executeQuery(db, sparql);
 
         } catch (Exception e) {
-            logger.error("Exception found ingesting Stardog data", e);
-            e.printStackTrace();
+            logger.error("Exception found loading dataset into Stardog", e);
         }
     }
 }
