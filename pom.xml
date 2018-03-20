@@ -22,8 +22,9 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>1.8</java.version>
-		<stardog-spring.version>5.0.1</stardog-spring.version>
+
 		<stardog.version>5.2.2</stardog.version>
+		<stardog-spring.version>5.0.1</stardog-spring.version>
 	</properties>
 
 	<dependencies>
@@ -72,12 +73,6 @@
 			<artifactId>server</artifactId>
 			<version>${stardog.version}</version>
 			<type>pom</type>
-			<exclusions>
-				<exclusion>
-					<groupId>com.complexible</groupId>
-					<artifactId>annex</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.complexible.stardog</groupId>
@@ -86,16 +81,8 @@
 			<type>jar</type>
 			<exclusions>
 				<exclusion>
-					<groupId>org.openrdf.sesame</groupId>
-					<artifactId>sesame</artifactId>
-				</exclusion>
-				<exclusion>
 					<groupId>com.complexible.stardog</groupId>
 					<artifactId>client-http</artifactId>
-				</exclusion>
-				<exclusion>
-					<groupId>com.complexible.stardog</groupId>
-					<artifactId>client-snarl</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
