@@ -9,32 +9,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import com.polarisalpha.ca.stardog.service.StardogService;
+import com.polarisalpha.ca.stardog.service.StardogDataService;
 
 @RestController
 public class StardogController {
     private static final Logger logger = LoggerFactory.getLogger(StardogController.class);
 
     @Autowired
-    private StardogService stardogService;
+    private StardogDataService dataService;
 
     @RequestMapping(value = "/load-n3", produces = "text/plain")
-    public String testN3(@RequestParam(value = "dbName", defaultValue = "n3-db") final String dbName) {
+    public String loadN3File(@RequestParam(value = "dbName", defaultValue = "n3-db") final String dbName) {
         return loadDataset(dbName,  RDFFormat.N3,"data/sp2b_10k.n3");
     }
 
     @RequestMapping(value = "/load-turtle", produces = "text/plain")
-    public String testTurtle(@RequestParam(value = "dbName", defaultValue = "turtle-db") final String dbName) {
+    public String loadTurtleFile(@RequestParam(value = "dbName", defaultValue = "turtle-db") final String dbName) {
         return loadDataset(dbName, RDFFormat.TURTLE,"data/starwars.ttl");
     }
 
     @RequestMapping(value = "/load-rdfxml1", produces = "text/plain")
-    public String testRDFXML1(@RequestParam(value = "dbName", defaultValue = "rdfxml1-db") final String dbName) {
+    public String loadRdfXmlFiles(@RequestParam(value = "dbName", defaultValue = "rdfxml1-db") final String dbName) {
         return loadDataset(dbName, RDFFormat.RDFXML,"data/University0_0.owl", "data/lubmSchema.owl");
     }
 
     @RequestMapping(value = "/load-rdfxml2", produces = "text/plain")
-    public String testRDFXML2(@RequestParam(value = "dbName", defaultValue = "rdfxml2-db") final String dbName) {
+    public String loadRdfXmlFile(@RequestParam(value = "dbName", defaultValue = "rdfxml2-db") final String dbName) {
         return loadDataset(dbName, RDFFormat.RDFXML,"data/catalog.rdf");
     }
 
@@ -49,15 +49,15 @@ public class StardogController {
         String result;
 
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()){
-            stardogService.initDb(dbName);
+            dataService.createDb(dbName);
             outputStream.write(String.format("Successfully created database '%s'.\n\n", dbName).getBytes());
 
-            stardogService.loadDataset(dbName, format, fileNames);
+            dataService.loadDataset(dbName, format, fileNames);
             outputStream.write(String.format("Loaded file '%s' to database '%s'\n\n",
                     StringUtils.join(fileNames, ","), dbName).getBytes());
 
             final String sparql = "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10";
-            stardogService.executeQuery(dbName, sparql, outputStream);
+            dataService.executeQuery(dbName, sparql, outputStream);
 
             result = outputStream.toString();
 

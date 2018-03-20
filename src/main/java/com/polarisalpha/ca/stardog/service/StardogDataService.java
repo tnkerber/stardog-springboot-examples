@@ -7,35 +7,27 @@ import org.openrdf.query.resultio.QueryResultIO;
 import org.openrdf.rio.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.complexible.common.rdf.query.resultio.TextTableQueryResultWriter;
 import com.complexible.stardog.api.Connection;
-import com.complexible.stardog.api.ConnectionConfiguration;
 import com.complexible.stardog.api.SelectQuery;
 import com.complexible.stardog.api.admin.AdminConnection;
-import com.complexible.stardog.api.admin.AdminConnectionConfiguration;
 
 @Service
-public class StardogService {
-    private static final Logger logger = LoggerFactory.getLogger(StardogService.class);
+public class StardogDataService {
+    private static final Logger logger = LoggerFactory.getLogger(StardogDataService.class);
 
-    @Value("${stardog.useEmbeddedServer}")
-    private Boolean useEmbeddedServer;
-    @Value("${stardog.remoteServer}")
-    private String remoteServer;
-    @Value("${stardog.user}")
-    private String user;
-    @Value("${stardog.password}")
-    private String passwd;
+    @Autowired
+    private StardogConnectionService connectionService;
 
     /**
-     * Initialize Stardog database
+     * Create a Stardog database
      * @param dbName database name
      */
-    public void initDb(String dbName) {
+    public void createDb(String dbName) {
         // create an admin connection to the Stardog embedded or remote server
-        try (final AdminConnection aAdminConnection = getAdminConnection()) {
+        try (final AdminConnection aAdminConnection = connectionService.getAdminConnection()) {
 
             // drop re-create db if needed
             if (aAdminConnection.list().contains(dbName)) {
@@ -56,7 +48,7 @@ public class StardogService {
      */
     public void loadDataset(String dbName, RDFFormat format, String... fileNames) throws Exception {
         // open a connection to stardog DB
-        try (final Connection conn = getConnection(dbName)) {
+        try (final Connection conn = connectionService.getConnection(dbName)) {
             // All changes to a database *must* be performed within a transaction.
             conn.begin();
 
@@ -81,7 +73,7 @@ public class StardogService {
      * @throws Exception if error occurs
      */
     public void executeQuery(String dbName, String sparql, ByteArrayOutputStream outputStream) throws Exception {
-        try (final Connection conn = getConnection(dbName)) {
+        try (final Connection conn = connectionService.getConnection(dbName)) {
 
             // execute the query
             final SelectQuery aQuery = conn.select(sparql);
@@ -97,40 +89,6 @@ public class StardogService {
         }
     }
 
-    /**
-     * Create an admin connection to the Stardog embedded or remote server
-     * @return AdminConnection
-     */
-    private AdminConnection getAdminConnection() {
-        if (Boolean.TRUE.equals(useEmbeddedServer)) {
-            return AdminConnectionConfiguration
-                    .toEmbeddedServer()
-                    .credentials(user, passwd)
-                    .connect();
-        } else {
-            return AdminConnectionConfiguration
-                    .toServer(remoteServer)
-                    .credentials(user, passwd)
-                    .connect();
-        }
-    }
-
-    /**
-     * Create a connection to the Stardog database
-     * @return AdminConnection
-     */
-    private Connection getConnection(String dbName) {
-        final ConnectionConfiguration connConfig = ConnectionConfiguration
-                .to(dbName)
-                .credentials(user, passwd);
-
-        if (!Boolean.TRUE.equals(useEmbeddedServer)) {
-            connConfig.server(remoteServer)
-                    .reasoning(true);
-        }
-
-        return connConfig.connect();
-    }
 
 }
 
