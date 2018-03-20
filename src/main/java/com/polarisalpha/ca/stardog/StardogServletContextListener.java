@@ -2,7 +2,6 @@ package com.polarisalpha.ca.stardog;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-import org.springframework.beans.factory.annotation.Value;
 import com.complexible.stardog.Stardog;
 
 /**
@@ -11,12 +10,10 @@ import com.complexible.stardog.Stardog;
 public class StardogServletContextListener implements ServletContextListener {
     private static Stardog stardog = null;
 
-    @Value("${stardog.useEmbeddedServer}")
-    private Boolean useEmbeddedServer;
-
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        if (Boolean.TRUE.equals(useEmbeddedServer)) {
+        // start the embedded server if 'stardog.useEmbeddedServer' is true
+        if (Boolean.parseBoolean(sce.getServletContext().getInitParameter("stardog.useEmbeddedServer"))) {
             stardog = Stardog.builder().create();
         }
     }

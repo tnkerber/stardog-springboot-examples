@@ -1,6 +1,7 @@
 package com.polarisalpha.ca.stardog.service;
 
 import java.io.FileInputStream;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.openrdf.query.TupleQueryResult;
 import org.openrdf.query.resultio.QueryResultIO;
 import org.openrdf.rio.RDFFormat;
@@ -61,7 +62,7 @@ public class StardogService {
 
             // `IO` will automatically close the stream once the data has been read.
             for (String fileName: fileNames) {
-                logger.debug("Loading dataset from {} into {} db" + fileName, dbName);
+                logger.debug("Loading dataset from file '{}' into '{}' db" + fileName, dbName);
                 conn.add().io()
                         .format(format)
                         .stream(new FileInputStream(fileName));
@@ -76,9 +77,10 @@ public class StardogService {
      * Execute a SPARQL query against a given database
      * @param dbName the database name
      * @param sparql the SPARQL query
+     * @param outputStream the output stream to write the query result to
      * @throws Exception if error occurs
      */
-    public void executeQuery(String dbName, String sparql) throws Exception {
+    public void executeQuery(String dbName, String sparql, ByteArrayOutputStream outputStream) throws Exception {
         try (final Connection conn = getConnection(dbName)) {
 
             // execute the query
@@ -87,7 +89,7 @@ public class StardogService {
 
             try {
                 logger.debug("Query results from {} db", dbName);
-                QueryResultIO.writeTuple(result, TextTableQueryResultWriter.FORMAT, System.out);
+                QueryResultIO.writeTuple(result, TextTableQueryResultWriter.FORMAT, outputStream);
             } finally {
                 // always close your result sets, they hold resources which need to be released.
                 result.close();
@@ -120,11 +122,11 @@ public class StardogService {
     private Connection getConnection(String dbName) {
         final ConnectionConfiguration connConfig = ConnectionConfiguration
                 .to(dbName)
-                .credentials(user, passwd)
-                .reasoning(true);
+                .credentials(user, passwd);
 
         if (!Boolean.TRUE.equals(useEmbeddedServer)) {
-            connConfig.server(remoteServer);
+            connConfig.server(remoteServer)
+                    .reasoning(true);
         }
 
         return connConfig.connect();
