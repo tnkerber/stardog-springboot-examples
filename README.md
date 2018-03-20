@@ -16,13 +16,13 @@ Download and install Stardog at  at www.stardog.com.
 
 ## Running the application
 
-### Compile,
+#### Compile
 ```
 mvn clean install
 ```
 If you have issues with maven not finding stardog jar/pom files, remove your .m2/settings.xml
 
-### Run the Spring Boot application,
+#### Run the Spring Boot application
 ```
 mvn spring-boot:run
 ```
