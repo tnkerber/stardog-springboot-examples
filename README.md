@@ -16,16 +16,27 @@ Download and install Stardog at  at www.stardog.com.
 
 ## Running the application
 
-#### Compile
+### Compile
 ```
 mvn clean install
 ```
 If you have issues with maven not finding stardog jar/pom files, remove your .m2/settings.xml
 
-#### Run the Spring Boot application
+### Run
 ```
 mvn spring-boot:run
 ```
+
+### Integration Tests
+Integration tests, which use Stardog embedded server, are disabled by default.  The following must be met before running the tests
+* _STARDOG_HOME_ environment variable must be set
+* Stardog server (to which _STARDOG_HOME_ points to) must not be running. Otherwise the embedded server cannot be started for the tests.
+
+To run integration test,
+```
+    mvn install -DskipTests=false
+```
+
 
 ### Supported endpoints
 The following endpoints load a hardcoded data file into a database. The database name can be overridden by providing a _dbName_ parameter.
