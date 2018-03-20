@@ -19,6 +19,10 @@ import com.complexible.stardog.api.admin.AdminConnectionConfiguration;
 public class StardogService {
     private static final Logger logger = LoggerFactory.getLogger(StardogService.class);
 
+    @Value("${stardog.useEmbeddedServer}")
+    private Boolean useEmbeddedServer;
+    @Value("${stardog.remoteServer}")
+    private String remoteServer;
     @Value("${stardog.user}")
     private String user;
     @Value("${stardog.password}")
@@ -29,10 +33,8 @@ public class StardogService {
      * @param dbName database name
      */
     public void initDb(String dbName) {
-        // create a connection to the DBMS
-        try (final AdminConnection aAdminConnection = AdminConnectionConfiguration.toEmbeddedServer()
-                .credentials(user, passwd)
-                .connect()) {
+        // create an admin connection to the Stardog embedded or remote server
+        try (final AdminConnection aAdminConnection = getAdminConnection()) {
 
             // drop re-create db if needed
             if (aAdminConnection.list().contains(dbName)) {
@@ -53,10 +55,7 @@ public class StardogService {
      */
     public void loadDataset(String dbName, RDFFormat format, String... fileNames) throws Exception {
         // open a connection to stardog DB
-        try (final Connection conn = ConnectionConfiguration
-                .to(dbName)
-                .credentials(user, passwd)
-                .connect()) {
+        try (final Connection conn = getConnection(dbName)) {
             // All changes to a database *must* be performed within a transaction.
             conn.begin();
 
@@ -80,14 +79,12 @@ public class StardogService {
      * @throws Exception if error occurs
      */
     public void executeQuery(String dbName, String sparql) throws Exception {
-        try (Connection conn = ConnectionConfiguration
-                .to(dbName)
-                .credentials(user, passwd)
-                .connect()) {
-            final SelectQuery aQuery = conn.select(sparql);
+        try (final Connection conn = getConnection(dbName)) {
 
             // execute the query
+            final SelectQuery aQuery = conn.select(sparql);
             final TupleQueryResult result = aQuery.execute();
+
             try {
                 logger.debug("Query results from {} db", dbName);
                 QueryResultIO.writeTuple(result, TextTableQueryResultWriter.FORMAT, System.out);
@@ -98,6 +95,40 @@ public class StardogService {
         }
     }
 
+    /**
+     * Create an admin connection to the Stardog embedded or remote server
+     * @return AdminConnection
+     */
+    private AdminConnection getAdminConnection() {
+        if (Boolean.TRUE.equals(useEmbeddedServer)) {
+            return AdminConnectionConfiguration
+                    .toEmbeddedServer()
+                    .credentials(user, passwd)
+                    .connect();
+        } else {
+            return AdminConnectionConfiguration
+                    .toServer(remoteServer)
+                    .credentials(user, passwd)
+                    .connect();
+        }
+    }
+
+    /**
+     * Create a connection to the Stardog database
+     * @return AdminConnection
+     */
+    private Connection getConnection(String dbName) {
+        final ConnectionConfiguration connConfig = ConnectionConfiguration
+                .to(dbName)
+                .credentials(user, passwd)
+                .reasoning(true);
+
+        if (!Boolean.TRUE.equals(useEmbeddedServer)) {
+            connConfig.server(remoteServer);
+        }
+
+        return connConfig.connect();
+    }
 
 }
 
