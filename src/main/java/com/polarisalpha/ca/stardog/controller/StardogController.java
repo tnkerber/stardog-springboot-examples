@@ -28,15 +28,53 @@ public class StardogController {
         return loadDataset(dbName, RDFFormat.TURTLE,"data/starwars.ttl");
     }
 
-    @RequestMapping(value = "/load-rdfxml1", produces = "text/plain")
-    public String loadRdfXmlFiles(@RequestParam(value = "dbName", defaultValue = "rdfxml1-db") final String dbName) {
+    @RequestMapping(value = "/load-owl", produces = "text/plain")
+    public String loadOwlFiles(@RequestParam(value = "dbName", defaultValue = "owl-db") final String dbName) {
         return loadDataset(dbName, RDFFormat.RDFXML,"data/University0_0.owl", "data/lubmSchema.owl");
     }
 
-    @RequestMapping(value = "/load-rdfxml2", produces = "text/plain")
-    public String loadRdfXmlFile(@RequestParam(value = "dbName", defaultValue = "rdfxml2-db") final String dbName) {
+    @RequestMapping(value = "/load-rdfxml", produces = "text/plain")
+    public String loadRdfXmlFile(@RequestParam(value = "dbName", defaultValue = "rdfxml-db") final String dbName) {
         return loadDataset(dbName, RDFFormat.RDFXML,"data/catalog.rdf");
     }
+
+    @RequestMapping(value = "/load-rdbms", produces = "text/plain")
+    public String loadFromRdbms(@RequestParam(value = "dbName", defaultValue = "rdbms-db") final String dbName) {
+        String result;
+
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            // create the virtual graph
+            final String virtualGraph = dbName + "-vg";
+            dataService.createVirtualGraph(virtualGraph, "data/rdbms.properties", "data/rdbms.ttl");
+            outputStream.write(String.format("Successfully added virtual graph '%s'.\n\n", virtualGraph).getBytes());
+
+            // create the db
+            dataService.createDb(dbName);
+            outputStream.write(String.format("Successfully created database '%s'.\n\n", dbName).getBytes());
+
+            // materialize the virtual graph
+            final String namedGraph = dbName + "-graph";
+            String sparql = String.format("COPY <virtual://%s> to <%s>", virtualGraph, namedGraph);
+            dataService.executeUpdateQuery(dbName, sparql);
+            outputStream.write(String.format("Materialized virtual graph to named graph '%s'.\n\n", namedGraph).getBytes());
+
+            // remove the virtual graph
+            dataService.removeVirtualGraph(virtualGraph);
+            outputStream.write(String.format("Removed virtual graph '%s'.\n\n", virtualGraph).getBytes());
+
+            // query against the named graph
+            sparql = String.format("select ?s ?p ?o { graph <%s> { ?s ?p ?o } } LIMIT 10", namedGraph);
+            dataService.executeSelectQuery(dbName, sparql, outputStream);
+
+            result = outputStream.toString();
+        } catch (Exception e) {
+            result = "Exception found creating virtual graph from R2RML mapping: " + e.getMessage();
+            logger.error(result, e);
+        }
+
+        return result;
+    }
+
 
     /**
      * Common method to load a dataset from a file to a stardog database
@@ -48,7 +86,7 @@ public class StardogController {
     private String loadDataset(String dbName, RDFFormat format, String... fileNames) {
         String result;
 
-        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()){
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             dataService.createDb(dbName);
             outputStream.write(String.format("Successfully created database '%s'.\n\n", dbName).getBytes());
 
@@ -57,7 +95,7 @@ public class StardogController {
                     StringUtils.join(fileNames, ","), dbName).getBytes());
 
             final String sparql = "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10";
-            dataService.executeQuery(dbName, sparql, outputStream);
+            dataService.executeSelectQuery(dbName, sparql, outputStream);
 
             result = outputStream.toString();
 

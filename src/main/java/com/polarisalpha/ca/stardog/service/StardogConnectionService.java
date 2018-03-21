@@ -6,6 +6,7 @@ import com.complexible.stardog.api.Connection;
 import com.complexible.stardog.api.ConnectionConfiguration;
 import com.complexible.stardog.api.admin.AdminConnection;
 import com.complexible.stardog.api.admin.AdminConnectionConfiguration;
+import com.complexible.stardog.virtual.api.admin.VirtualGraphAdminConnection;
 
 @Component
 public class StardogConnectionService {
@@ -36,6 +37,10 @@ public class StardogConnectionService {
                     .credentials(user, password)
                     .connect();
         }
+    }
+
+    public final VirtualGraphAdminConnection getVirtualGraphAdminConnection() {
+        return getAdminConnection().as(VirtualGraphAdminConnection.class);
     }
 
     /**
