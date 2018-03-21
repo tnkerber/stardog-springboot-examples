@@ -50,6 +50,7 @@ The following endpoints load a hardcoded data file into a database. The database
 * http://localhost:8080/load-owl - create and load data from _data/University0_0.owl_ and _data/lubmSchema.owl_ into _owl-db_ database
 * http://localhost:8080/load-rdfxml - create and load data from _data/catalog.rdf_ into _rdfxml-db_ database
 * http://localhost:8080/load-rdbms - create and load data from a relational database management system into _rdbms-db_ database
-** The RDBMS configuration is stored in rdbms.properties file.  It's hardcoded to the schema 'postgres' in the local PostgreSQL instance
-** Before running this endpoint, create relational test data by running 'rdbms.sql' script in the correct database instance
-** *Note*: This feature is only supported with Enterprise or Developer license.
+
+    * The RDBMS configuration is stored in rdbms.properties file.  It's hardcoded to the schema 'postgres' in the local PostgreSQL instance
+    * Before running this endpoint, create relational test data by running 'rdbms.sql' script in the correct database instance
+    * *Note*: This feature is only supported with Enterprise or Developer license.
