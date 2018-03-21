@@ -38,7 +38,7 @@ public class StardogIntegrationTest {
 
     @Parameterized.Parameters
     public static Object[] params() {
-        return new Object[] { "/load-n3", "/load-turtle", "/load-rdfxml1", "/load-rdfxml2" };
+        return new Object[] { "/load-n3", "/load-turtle", "/load-owl", "/load-rdfxml" };
     }
     @Parameterized.Parameter
     public String endpoint;
@@ -81,5 +81,6 @@ public class StardogIntegrationTest {
 
         Assert.assertNotNull(response);
         Assert.assertTrue(response.contains(dbName));
+        Assert.assertFalse(response.contains("Error") || response.contains("Exception"));
     }
 }
