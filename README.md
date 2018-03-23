@@ -18,9 +18,9 @@ Download and install Stardog at  at www.stardog.com.
 * To start the Stardog server, `<STARDOG_HOME>/bin/stardog-admin server start`
 * Verify that the server is runing and can be accessed in a web browser at  http://localhost:5820/
 
-The _/load-doc_ endpoint uses the custom WordAndLineCountExtractor extractor. It's required that this extractor be in the classpath of the Stardog server.
-* Build the application by running "mvn clean package"
-* cp target/stardog-spring-1.0.jar.original <STARDOG_HOME>/server/ext/stardog-spring-1.0.jar
+The _/load-doc_ endpoint uses the custom WordAndLineCountExtractor extractor. It's required that this extractor be in the classpath of the Stardog server.  In the root project directory,
+* `mvn clean package`
+* `cp target/stardog-spring-1.0.jar.original <STARDOG_HOME>/server/ext/stardog-spring-1.0.jar`
 * Restart the Stardog server
 
 ## Running the application
@@ -61,4 +61,4 @@ The following endpoints load a hardcoded data file into a database. The database
 
 * http://localhost:8080/load-doc - create database _doc-db_ and load documents _article.txt_ and _input.pdf_ to it using provided and custom RDFExtractors
 
-    * If encountering an error such as "Unknown extractor name: WordAndLineCountExtractor", make sure the file <STARDOG_HOME>/server/ext/stardog-spring-1.0.jar.  If not, see instruction in the Prerequisites section.
+    * If encountering an error such as _"Unknown extractor name: WordAndLineCountExtractor"_, make sure the file <STARDOG_HOME>/server/ext/stardog-spring-1.0.jar exists.  If not, see instruction in the Prerequisites section.
