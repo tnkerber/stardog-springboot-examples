@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.polarisalpha.ca.stardog.extractor.WordAndLineCountExtractor;
 import com.polarisalpha.ca.stardog.service.StardogDataService;
 
 @RestController
@@ -20,22 +21,22 @@ public class StardogController {
 
     @RequestMapping(value = "/load-n3", produces = "text/plain")
     public String loadN3File(@RequestParam(value = "dbName", defaultValue = "n3-db") final String dbName) {
-        return loadDataset(dbName,  RDFFormat.N3,"data/sp2b_10k.n3");
+        return loadDataset(dbName,  RDFFormat.N3,"sp2b_10k.n3");
     }
 
     @RequestMapping(value = "/load-turtle", produces = "text/plain")
     public String loadTurtleFile(@RequestParam(value = "dbName", defaultValue = "turtle-db") final String dbName) {
-        return loadDataset(dbName, RDFFormat.TURTLE,"data/starwars.ttl");
+        return loadDataset(dbName, RDFFormat.TURTLE,"starwars.ttl");
     }
 
     @RequestMapping(value = "/load-owl", produces = "text/plain")
     public String loadOwlFiles(@RequestParam(value = "dbName", defaultValue = "owl-db") final String dbName) {
-        return loadDataset(dbName, RDFFormat.RDFXML,"data/University0_0.owl", "data/lubmSchema.owl");
+        return loadDataset(dbName, RDFFormat.RDFXML,"University0_0.owl", "data/lubmSchema.owl");
     }
 
     @RequestMapping(value = "/load-rdfxml", produces = "text/plain")
     public String loadRdfXmlFile(@RequestParam(value = "dbName", defaultValue = "rdfxml-db") final String dbName) {
-        return loadDataset(dbName, RDFFormat.RDFXML,"data/catalog.rdf");
+        return loadDataset(dbName, RDFFormat.RDFXML,"catalog.rdf");
     }
 
     @RequestMapping(value = "/load-rdbms", produces = "text/plain")
@@ -45,7 +46,7 @@ public class StardogController {
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             // create the virtual graph
             final String virtualGraph = dbName + "-vg";
-            dataService.createVirtualGraph(virtualGraph, "data/rdbms.properties", "data/rdbms.ttl");
+            dataService.createVirtualGraph(virtualGraph, "rdbms.properties", "rdbms.ttl");
             outputStream.write(String.format("Successfully added virtual graph '%s'.\n\n", virtualGraph).getBytes());
 
             // create the db
@@ -81,25 +82,28 @@ public class StardogController {
 
         try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            dataService.createDb(dbName);
-            outputStream.write(String.format("Successfully created database '%s'.\n\n", dbName).getBytes());
+            outputStream.write(loadDataset(dbName, RDFFormat.TURTLE, "person_movie.ttl").getBytes());
+            outputStream.write("\n----------------------------\n\n".getBytes());
 
-            final String datasetFile = "data/person_movie.ttl";
-            dataService.loadDataset(dbName, RDFFormat.TURTLE, datasetFile);
-            outputStream.write(String.format("Loaded dataset from '%s' to database '%s'\n\n", datasetFile, dbName).getBytes());
+            final String doc1Name = "article.txt";
+            final String doc2Name = "input.pdf";
+            dataService.loadDocs(dbName, doc1Name, doc2Name);
+            outputStream.write(String.format("Loaded documents '%s' and '%s' to database '%s'\n\n", doc1Name, doc2Name, dbName).getBytes());
 
-            final String docName = "article.txt";
-            final String docPath = "data/" + docName;
-            dataService.loadDocs(dbName, docPath);
-            outputStream.write(String.format("Loaded document '%s' to database '%s'\n\n", docPath, dbName).getBytes());
+            outputStream.write("The documents have the following stats\n".getBytes());
+            String sparql = String.format("select ?doc ?lineCount ?wordCount { graph ?doc { "
+                            + "  ?doc <%s> ?lineCount . "
+                            + "  ?doc <%s> ?wordCount . } }",
+                    WordAndLineCountExtractor.LINE_COUNT, WordAndLineCountExtractor.WORD_COUNT);
+            dataService.executeSelectQuery(dbName, sparql, outputStream);
 
-            outputStream.write(String.format("The following people are mentioned in the loaded document '%s'\n", docPath).getBytes());
-            final String sparql = String.format("select ?mention ?entity where {"
-                    + " graph <tag:stardog:api:docs:%s:%s> {"
-                    + "   ?s rdfs:label ?mention ."
-                    + "   ?s <http://purl.org/dc/terms/references> ?entity ."
-                    + " } }",
-                    dbName, docName);
+            outputStream.write(String.format("\n\nThe following people are mentioned in the document '%s'\n", doc1Name).getBytes());
+            sparql = String.format("select ?mention ?entity where {"
+                            + " graph <tag:stardog:api:docs:%s:%s> {"
+                            + "   ?s rdfs:label ?mention ."
+                            + "   ?s <http://purl.org/dc/terms/references> ?entity ."
+                            + " } }",
+                    dbName, doc1Name);
             dataService.executeSelectQuery(dbName, sparql, outputStream);
 
 

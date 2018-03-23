@@ -1,6 +1,5 @@
 package com.polarisalpha.ca.stardog.service;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -8,7 +7,6 @@ import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -23,8 +21,6 @@ import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import com.complexible.common.rdf.query.resultio.TextTableQueryResultWriter;
 import com.complexible.stardog.api.Connection;
@@ -41,11 +37,10 @@ import com.complexible.stardog.virtual.api.admin.VirtualGraphAdminConnection;
 @Service
 public class StardogDataService {
     private static final Logger logger = LoggerFactory.getLogger(StardogDataService.class);
+    private static final String DATA_PATH = "data/";
 
     @Autowired
     private StardogConnectionService connectionService;
-    @Autowired
-    private ResourceLoader resourceLoader;
 
     /**
      * Create a Stardog database
@@ -71,7 +66,7 @@ public class StardogDataService {
                     .set(StardocsOptions.DOCS_OPENNLP_MODELS_PATH, getDirectoryPath("openNLP"))
                     // set default doc extractors
                     .set(StardocsOptions.DOCS_DEFAULT_RDF_EXTRACTORS, StringUtils.join(Arrays.asList(
-                            "tika", "entities", "linker"), ","))
+                            "tika", "entities", "linker", "WordAndLineCountExtractor"), ","))
                     .create();
         }
     }
@@ -95,7 +90,7 @@ public class StardogDataService {
                 logger.debug("Loading dataset from file '{}' into '{}' db" + fileName, dbName);
                 conn.add().io()
                         .format(format)
-                        .stream(new FileInputStream(fileName));
+                        .stream(new FileInputStream(getFilePath(fileName)));
             }
 
             // commit the transaction.
@@ -107,21 +102,19 @@ public class StardogDataService {
      * Load (unstructured) data from a file into Stardog BITES document storage subsystem
      *
      * @param dbName    the Stardog database name
-     * @param docFiles the doc files path
+     * @param docNames the doc files path
      * @throws Exception if error occurs
      */
-    public void loadDocs(String dbName, String... docFiles) throws Exception {
+    public void loadDocs(String dbName, String... docNames) throws Exception {
         // open a connection to stardog BITES system
         try (final StardocsConnection conn = connectionService.getDocConnection(dbName)) {
             // All changes to a database *must* be performed within a transaction.
             conn.begin();
 
             // `IO` will automatically close the stream once the data has been read.
-            for (String docFile : docFiles) {
-                logger.debug("Loading unstructured data from file '{}' into '{}' db" + docFile, dbName);
-                // strip the path from the docFile to get docName
-                final String docName = StringUtils.substring(docFile, docFile.lastIndexOf("/") + 1);
-                conn.putDocument(docName, new FileInputStream(docFile));
+            for (String docName : docNames) {
+                logger.debug("Loading unstructured data from file '{}' into '{}' db" + docName, dbName);
+                conn.putDocument(docName, new FileInputStream(getFilePath(docName)));
             }
 
             // commit the transaction.
@@ -247,6 +240,9 @@ public class StardogDataService {
         }
     }
 
+    private String getFilePath(String fileName) {
+        return DATA_PATH + fileName;
+    }
 }
 
 
