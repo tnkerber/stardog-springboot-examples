@@ -1,11 +1,20 @@
 package com.polarisalpha.ca.stardog.service;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.openrdf.model.Model;
 import org.openrdf.query.TupleQueryResult;
 import org.openrdf.query.resultio.QueryResultIO;
@@ -14,12 +23,18 @@ import org.openrdf.rio.Rio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import com.complexible.common.rdf.query.resultio.TextTableQueryResultWriter;
 import com.complexible.stardog.api.Connection;
 import com.complexible.stardog.api.SelectQuery;
-import com.complexible.stardog.api.UpdateQuery;
 import com.complexible.stardog.api.admin.AdminConnection;
+import com.complexible.stardog.docs.StardocsConnection;
+import com.complexible.stardog.docs.StardocsOptions;
+import com.complexible.stardog.icv.ICVOptions;
+import com.complexible.stardog.index.IndexOptions;
+import com.complexible.stardog.search.SearchOptions;
 import com.complexible.stardog.virtual.api.VirtualGraph;
 import com.complexible.stardog.virtual.api.admin.VirtualGraphAdminConnection;
 
@@ -29,12 +44,15 @@ public class StardogDataService {
 
     @Autowired
     private StardogConnectionService connectionService;
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     /**
      * Create a Stardog database
+     *
      * @param dbName database name
      */
-    public void createDb(String dbName) {
+    public void createDb(String dbName) throws Exception {
         // create an admin connection to the Stardog embedded or remote server
         try (final AdminConnection aAdminConnection = connectionService.getAdminConnection()) {
 
@@ -43,15 +61,26 @@ public class StardogDataService {
                 aAdminConnection.drop(dbName);
             }
 
-            // Create a database with default settings
-            aAdminConnection.newDatabase(dbName).create();
+            // Create a database with search, open NLP
+            aAdminConnection.newDatabase(dbName)
+                    .set(SearchOptions.SEARCHABLE, true)
+                    .set(IndexOptions.INDEX_NAMED_GRAPHS, true)
+                    .set(ICVOptions.ICV_REASONING_ENABLED, true)
+                    .set(ICVOptions.ICV_ENABLED, true)
+                    // load OpenNLP models
+                    .set(StardocsOptions.DOCS_OPENNLP_MODELS_PATH, getDirectoryPath("openNLP"))
+                    // set default doc extractors
+                    .set(StardocsOptions.DOCS_DEFAULT_RDF_EXTRACTORS, StringUtils.join(Arrays.asList(
+                            "tika", "entities", "linker"), ","))
+                    .create();
         }
     }
 
     /**
-     * Load data from a file into Stardog db
-     * @param dbName the Stardog database name
-     * @param format the file format
+     * Load (structured) data from a file into Stardog db
+     *
+     * @param dbName    the Stardog database name
+     * @param format    the file format
      * @param fileNames the file names
      * @throws Exception if error occurs
      */
@@ -62,7 +91,7 @@ public class StardogDataService {
             conn.begin();
 
             // `IO` will automatically close the stream once the data has been read.
-            for (String fileName: fileNames) {
+            for (String fileName : fileNames) {
                 logger.debug("Loading dataset from file '{}' into '{}' db" + fileName, dbName);
                 conn.add().io()
                         .format(format)
@@ -75,9 +104,36 @@ public class StardogDataService {
     }
 
     /**
+     * Load (unstructured) data from a file into Stardog BITES document storage subsystem
+     *
+     * @param dbName    the Stardog database name
+     * @param docFiles the doc files path
+     * @throws Exception if error occurs
+     */
+    public void loadDocs(String dbName, String... docFiles) throws Exception {
+        // open a connection to stardog BITES system
+        try (final StardocsConnection conn = connectionService.getDocConnection(dbName)) {
+            // All changes to a database *must* be performed within a transaction.
+            conn.begin();
+
+            // `IO` will automatically close the stream once the data has been read.
+            for (String docFile : docFiles) {
+                logger.debug("Loading unstructured data from file '{}' into '{}' db" + docFile, dbName);
+                // strip the path from the docFile to get docName
+                final String docName = StringUtils.substring(docFile, docFile.lastIndexOf("/") + 1);
+                conn.putDocument(docName, new FileInputStream(docFile));
+            }
+
+            // commit the transaction.
+            conn.commit();
+        }
+    }
+
+    /**
      * Execute a SPARQL select query against a given database
-     * @param dbName the database name
-     * @param sparql the SPARQL query
+     *
+     * @param dbName       the database name
+     * @param sparql       the SPARQL query
      * @param outputStream the output stream to write the query result to
      * @throws Exception if error occurs
      */
@@ -101,6 +157,7 @@ public class StardogDataService {
 
     /**
      * Execute an update query against a given database
+     *
      * @param dbName the database name
      * @param sparql the SPARQL query
      * @throws Exception if error occurs
@@ -118,6 +175,7 @@ public class StardogDataService {
 
     /**
      * Remove a virtual graph if it exists
+     *
      * @param graphName the virtual graph name
      */
     public void removeVirtualGraph(String graphName) {
@@ -138,9 +196,10 @@ public class StardogDataService {
 
     /**
      * Create a virtual graph
-     * @param graphName the graph name to create
+     *
+     * @param graphName      the graph name to create
      * @param dbPropertyFile the JDBC connection configuration file path
-     * @param mappingFile the R2RML mapping file path
+     * @param mappingFile    the R2RML mapping file path
      */
     public void createVirtualGraph(String graphName, String dbPropertyFile, String mappingFile) {
         // load the DB properties
@@ -172,6 +231,21 @@ public class StardogDataService {
         }
     }
 
+    /**
+     * Get path to the directory relative to application root
+     * @param dirName the directory name
+     * @return the directory path
+     * @throws Exception if error occurs
+     */
+    private String getDirectoryPath(String dirName) throws Exception {
+        final URI uri = getClass().getClassLoader().getResource(dirName).toURI();
+        if ("jar".equals(uri.getScheme())) {
+            final FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.emptyMap(), null);
+            return fileSystem.getPath(dirName).toString();
+        } else {
+            return Paths.get(uri).toString();
+        }
+    }
 
 }
 

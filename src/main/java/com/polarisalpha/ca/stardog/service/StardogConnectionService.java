@@ -6,6 +6,7 @@ import com.complexible.stardog.api.Connection;
 import com.complexible.stardog.api.ConnectionConfiguration;
 import com.complexible.stardog.api.admin.AdminConnection;
 import com.complexible.stardog.api.admin.AdminConnectionConfiguration;
+import com.complexible.stardog.docs.StardocsConnection;
 import com.complexible.stardog.virtual.api.admin.VirtualGraphAdminConnection;
 
 @Component
@@ -61,4 +62,15 @@ public class StardogConnectionService {
 
         return connConfig.connect();
     }
+
+    /**
+     * Create a connection to the Stardog database.
+     * Calling client is responsible for closing the connection.
+     *
+     * @return com.complexible.stardog.docs.StardocsConnection
+     */
+    public final StardocsConnection getDocConnection(String dbName) {
+        return getConnection(dbName).as(StardocsConnection.class);
+    }
+
 }

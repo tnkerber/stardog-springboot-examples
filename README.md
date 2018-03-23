@@ -54,3 +54,5 @@ The following endpoints load a hardcoded data file into a database. The database
     * The RDBMS configuration is stored in _rdbms.properties_ file.  It's hardcoded to the schema 'postgres' in the local PostgreSQL instance
     * Before running this endpoint, create relational test data by running _rdbms.sql_ script in the correct database instance
     * **Note**: This feature is only supported with Enterprise or Developer license.
+
+* http://localhost:8080/load-doc - create database _doc-db_ and load text document _data/article.txt_ to it using provided RDFExtractors

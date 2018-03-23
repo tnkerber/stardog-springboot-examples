@@ -75,6 +75,43 @@ public class StardogController {
         return result;
     }
 
+    @RequestMapping(value = "/load-doc", produces = "text/plain")
+    public String loadUnstructuredData(@RequestParam(value = "dbName", defaultValue = "doc-db") final String dbName) {
+        String result;
+
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
+            dataService.createDb(dbName);
+            outputStream.write(String.format("Successfully created database '%s'.\n\n", dbName).getBytes());
+
+            final String datasetFile = "data/person_movie.ttl";
+            dataService.loadDataset(dbName, RDFFormat.TURTLE, datasetFile);
+            outputStream.write(String.format("Loaded dataset from '%s' to database '%s'\n\n", datasetFile, dbName).getBytes());
+
+            final String docName = "article.txt";
+            final String docPath = "data/" + docName;
+            dataService.loadDocs(dbName, docPath);
+            outputStream.write(String.format("Loaded document '%s' to database '%s'\n\n", docPath, dbName).getBytes());
+
+            outputStream.write(String.format("The following people are mentioned in the loaded document '%s'\n", docPath).getBytes());
+            final String sparql = String.format("select ?mention ?entity where {"
+                    + " graph <tag:stardog:api:docs:%s:%s> {"
+                    + "   ?s rdfs:label ?mention ."
+                    + "   ?s <http://purl.org/dc/terms/references> ?entity ."
+                    + " } }",
+                    dbName, docName);
+            dataService.executeSelectQuery(dbName, sparql, outputStream);
+
+
+            result = outputStream.toString();
+        } catch (Exception e) {
+            result = "Exception found loading dataset into Stardog: " + e.getMessage();
+            logger.error(result, e);
+        }
+
+        return result;
+    }
+
 
     /**
      * Common method to load a dataset from a file to a stardog database
