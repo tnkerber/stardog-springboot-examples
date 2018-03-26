@@ -197,7 +197,7 @@ public class StardogDataService {
     public void createVirtualGraph(String graphName, String dbPropertyFile, String mappingFile) {
         // load the DB properties
         final Properties dbProperties = new Properties();
-        try (final FileInputStream fileInputStream = new FileInputStream(dbPropertyFile)) {
+        try (final FileInputStream fileInputStream = new FileInputStream(getFilePath(dbPropertyFile))) {
             dbProperties.load(fileInputStream);
         } catch (IOException e) {
             final String errorMsg = String.format("Failed to load property file '%s'", dbPropertyFile);
@@ -207,7 +207,7 @@ public class StardogDataService {
 
         // load the R2RML mapping
         Model model;
-        try (final FileInputStream fileInputStream = new FileInputStream(mappingFile)) {
+        try (final FileInputStream fileInputStream = new FileInputStream(getFilePath(mappingFile))) {
             final URL mappingFileUrl = new URL("file://" + mappingFile);
             model = Rio.parse(fileInputStream, mappingFileUrl.toString(), RDFFormat.TURTLE);
         } catch (IOException e) {
